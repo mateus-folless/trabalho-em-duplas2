@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Criar conta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #e8edf1;
+    --panel: #14263a;
+    --panel-ink: #e8edf1;
+    --card: #ffffff;
+    --ink: #14263a;
+    --muted: #5a6b7c;
+    --line: #c7d1da;
+    --accent: #1f6f5c;
+    --accent-hover: #185a4a;
+    --error: #b3261e;
+    --ok: #1f6f5c;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: grid;
+    grid-template-columns: minmax(280px, 5fr) 7fr;
+  }
+  aside {
+    background: var(--panel);
+    color: var(--panel-ink);
+    padding: 3rem clamp(1.5rem, 4vw, 3.5rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  aside h1 { font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1.05; margin: 0 0 1rem; font-weight: 700; letter-spacing: -0.02em; }
+  aside p { margin: 0; max-width: 32ch; line-height: 1.5; color: #aebccb; }
+  main { display: grid; place-items: center; padding: 2rem 1.25rem; }
+  form { width: 100%; max-width: 420px; }
+  .field { margin-bottom: 1.1rem; }
+  label { display: block; font-weight: 500; margin-bottom: 0.35rem; }
+  .control { position: relative; }
+  input {
+    width: 100%;
+    font: inherit;
+    padding: 0.75rem 0.85rem;
+    background: var(--card);
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    color: var(--ink);
+    transition: border-color .15s;
+  }
+  input:focus-visible { outline: 3px solid rgba(31,111,92,.3); border-color: var(--accent); }
+  .field.invalid input { border-color: var(--error); }
+  .field.valid input { border-color: var(--ok); }
+  .msg { min-height: 1.2rem; margin-top: 0.3rem; font-size: 0.875rem; color: var(--error); }
+  .toggle {
+    position: absolute; right: 0.4rem; top: 50%; transform: translateY(-50%);
+    background: none; border: 0; font: inherit; font-size: 0.85rem; color: var(--muted);
+    padding: 0.4rem 0.5rem; cursor: pointer; border-radius: 4px;
+  }
+  .toggle:focus-visible { outline: 3px solid rgba(31,111,92,.3); }
+  #senha { padding-right: 4.5rem; }
+  .strength { display: flex; gap: 4px; margin-top: 0.5rem; }
+  .strength i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); transition: background .2s; }
+  .strength[data-level="1"] i:nth-child(-n+1) { background: var(--error); }
+  .strength[data-level="2"] i:nth-child(-n+2) { background: #c77d0a; }
+  .strength[data-level="3"] i:nth-child(-n+3) { background: #6a9a2a; }
+  .strength[data-level="4"] i:nth-child(-n+4) { background: var(--ok); }
+  .hint { font-size: 0.85rem; color: var(--muted); margin-top: 0.3rem; }
+  button.submit {
+    width: 100%; font: inherit; font-weight: 700; padding: 0.85rem 1rem; margin-top: 0.4rem;
+    background: var(--accent); color: #fff; border: 0; border-radius: 6px; cursor: pointer;
+    transition: background .15s;
+  }
+  button.submit:hover { background: var(--accent-hover); }
+  button.submit:focus-visible { outline: 3px solid rgba(31,111,92,.4); outline-offset: 2px; }
+  button.submit:disabled { opacity: .6; cursor: progress; }
+  #status { margin-top: 1rem; padding: 0.8rem 1rem; border-radius: 6px; display: none; line-height: 1.4; }
+  #status.ok { display: block; background: #dcefe9; color: #124a3c; }
+  #status.err { display: block; background: #f7e0de; color: #7d1a14; }
+  @media (max-width: 760px) {
+    body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    aside { padding: 1.75rem 1.5rem; justify-content: flex-start; }
+    aside h1 { font-size: 2rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+  <aside>
+    <h1>Crie sua conta</h1>
+    <p>Preencha seus dados. Seu CPF e e-mail são conferidos antes de enviar.</p>
+  </aside>
+
+  <main>
+    <form id="form" novalidate>
+      <div class="field" data-field="nome">
+        <label for="nome">Nome completo</label>
+        <input id="nome" name="nome" type="text" autocomplete="name" required>
+        <div class="msg" aria-live="polite"></div>
+      </div>
+
+      <div class="field" data-field="email">
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+        <div class="msg" aria-live="polite"></div>
+      </div>
+
+      <div class="field" data-field="cpf">
+        <label for="cpf">CPF</label>
+        <input id="cpf" name="cpf" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" autocomplete="off" required>
+        <div class="msg" aria-live="polite"></div>
+      </div>
+
+      <div class="field" data-field="senha">
+        <label for="senha">Senha</label>
+        <div class="control">
+          <input id="senha" name="senha" type="password" autocomplete="new-password" required>
+          <button type="button" class="toggle" id="toggleSenha" aria-label="Mostrar senha">Mostrar</button>
+        </div>
+        <div class="strength" id="strength" data-level="0" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="hint">Use 8 ou mais caracteres, com letras e números.</div>
+        <div class="msg" aria-live="polite"></div>
+      </div>
+
+      <div class="field" data-field="confirma">
+        <label for="confirma">Confirmar senha</label>
+        <input id="confirma" type="password" autocomplete="new-password" required>
+        <div class="msg" aria-live="polite"></div>
+      </div>
+
+      <button class="submit" type="submit" id="btn">Criar conta</button>
+      <div id="status" role="status"></div>
+    </form>
+  </main>
+
+<script>
+  // Ajuste aqui a URL e o formato do corpo conforme a sua API.
+  const API_URL = 'http://localhost:3000/api/usuarios';
+  const LOGIN_URL = 'login.html'; // página para onde o usuário vai após o cadastro
+
+  const $ = (id) => document.getElementById(id);
+  const form = $('form');
+
+  // ---------- Validadores ----------
+  const onlyDigits = (v) => v.replace(/\D/g, '');
+
+  function cpfValido(valor) {
+    const cpf = onlyDigits(valor);
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    for (let t = 9; t < 11; t++) {
+      let soma = 0;
+      for (let i = 0; i < t; i++) soma += Number(cpf[i]) * (t + 1 - i);
+      const dig = ((soma * 10) % 11) % 10;
+      if (dig !== Number(cpf[t])) return false;
+    }
+    return true;
+  }
+
+  function forcaSenha(s) {
+    let n = 0;
+    if (s.length >= 8) n++;
+    if (/[a-z]/.test(s) && /[A-Z]/.test(s)) n++;
+    if (/\d/.test(s)) n++;
+    if (/[^A-Za-z0-9]/.test(s) || s.length >= 12) n++;
+    return n;
+  }
+
+  const regras = {
+    nome: (v) => v.trim().split(/\s+/).length >= 2 ? '' : 'Informe nome e sobrenome.',
+    email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? '' : 'Digite um e-mail válido, como nome@exemplo.com.',
+    cpf: (v) => cpfValido(v) ? '' : 'CPF inválido. Confira os 11 números.',
+    senha: (v) => (v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v)) ? '' : 'A senha precisa de 8 ou mais caracteres, com letras e números.',
+    confirma: (v) => v === $('senha').value && v !== '' ? '' : 'As senhas não são iguais.'
+  };
+
+  function marcar(campo, erro) {
+    const box = document.querySelector(`[data-field="${campo}"]`);
+    box.classList.toggle('invalid', !!erro);
+    box.classList.toggle('valid', !erro && $(campo).value !== '');
+    box.querySelector('.msg').textContent = erro;
+  }
+
+  function validar(campo) {
+    const erro = regras[campo]($(campo).value);
+    marcar(campo, erro);
+    return !erro;
+  }
+
+  // ---------- Eventos ----------
+  $('cpf').addEventListener('input', (e) => {
+    const d = onlyDigits(e.target.value).slice(0, 11);
+    e.target.value = d
+      .replace(/^(\d{3})(\d)/, '$1.$2')
+      .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/\.(\d{3})(\d)/, '.$1-$2');
+  });
+
+  $('senha').addEventListener('input', (e) => {
+    $('strength').dataset.level = e.target.value ? forcaSenha(e.target.value) : 0;
+    if ($('confirma').value) validar('confirma');
+  });
+
+  $('toggleSenha').addEventListener('click', () => {
+    const mostrando = $('senha').type === 'text';
+    $('senha').type = mostrando ? 'password' : 'text';
+    $('confirma').type = mostrando ? 'password' : 'text';
+    $('toggleSenha').textContent = mostrando ? 'Mostrar' : 'Ocultar';
+    $('toggleSenha').setAttribute('aria-label', mostrando ? 'Mostrar senha' : 'Ocultar senha');
+  });
+
+  Object.keys(regras).forEach((c) => {
+    $(c).addEventListener('blur', () => validar(c));
+    $(c).addEventListener('input', () => {
+      if (document.querySelector(`[data-field="${c}"]`).classList.contains('invalid')) validar(c);
+    });
+  });
+
+  function mostrarStatus(tipo, texto) {
+    const s = $('status');
+    s.className = tipo;
+    s.textContent = texto;
+  }
+
+  // Converte qualquer formato comum de erro da API em [{campo, msg}]
+  const ALIAS = { name: 'nome', password: 'senha', senhaConfirmacao: 'confirma', 'e-mail': 'email' };
+  function adivinharCampo(texto) {
+    const t = (texto || '').toLowerCase();
+    if (t.includes('cpf')) return 'cpf';
+    if (t.includes('email') || t.includes('e-mail')) return 'email';
+    if (t.includes('senha') || t.includes('password')) return 'senha';
+    if (t.includes('nome') || t.includes('name')) return 'nome';
+    return null;
+  }
+  function normalizarErros(data, res) {
+    const lista = [];
+    const add = (campo, msg) => {
+      campo = ALIAS[campo] || campo;
+      if (!regras[campo]) campo = adivinharCampo(msg);
+      lista.push({ campo, msg: String(msg) });
+    };
+    const itens = data && (data.erros || data.errors || data.details);
+    if (Array.isArray(itens)) {
+      itens.forEach((i) => typeof i === 'string' ? add(null, i) : add(i.campo || i.field || i.path, i.mensagem || i.message || i.msg || JSON.stringify(i)));
+    } else if (itens && typeof itens === 'object') {
+      Object.entries(itens).forEach(([k, v]) => add(k, Array.isArray(v) ? v.join(' ') : v));
+    }
+    if (!lista.length) {
+      const msg = data && (data.erro || data.error || data.mensagem || data.message);
+      if (msg) add(data.campo || data.field, msg);
+    }
+    if (!lista.length) {
+      const padrao = {
+        409: 'Esse cadastro já existe.',
+        429: 'Muitas tentativas. Aguarde um pouco e tente de novo.'
+      }[res.status] || (res.status >= 500 ? 'O servidor falhou. Tente de novo em instantes.' : `Erro ${res.status}. Tente de novo.`);
+      lista.push({ campo: null, msg: padrao });
+    }
+    return lista;
+  }
+  function mostrarErrosApi(data, res) {
+    const geral = [];
+    let foco = null;
+    normalizarErros(data, res).forEach(({ campo, msg }) => {
+      if (campo && regras[campo]) { marcar(campo, msg); foco = foco || $(campo); }
+      else geral.push(msg);
+    });
+    if (geral.length) mostrarStatus('err', geral.join(' '));
+    if (foco) foco.focus();
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('status').className = '';
+    const ok = Object.keys(regras).map(validar).every(Boolean);
+    if (!ok) {
+      const primeiro = document.querySelector('.invalid input');
+      if (primeiro) primeiro.focus();
+      return;
+    }
+
+    const btn = $('btn');
+    let redirecionando = false;
+    btn.disabled = true;
+    btn.textContent = 'Criando conta...';
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: $('nome').value.trim(),
+          email: $('email').value.trim().toLowerCase(),
+          cpf: onlyDigits($('cpf').value),
+          senha: $('senha').value
+        })
+      });
+      let data = null;
+      try { data = await res.json(); } catch (_) {}
+
+      if (res.ok) {
+        mostrarStatus('ok', 'Conta criada. Redirecionando para o login...');
+        btn.textContent = 'Conta criada';
+        redirecionando = true;
+        setTimeout(() => { window.location.href = LOGIN_URL + '?cadastro=ok'; }, 1200);
+        return;
+      } else {
+        mostrarErrosApi(data, res);
+      }
+    } catch (err) {
+      mostrarStatus('err', 'Não foi possível falar com o servidor. Confira se a API está rodando em ' + API_URL + '.');
+    } finally {
+      if (!redirecionando) {
+        btn.disabled = false;
+        btn.textContent = 'Criar conta';
+      }
+    }
+  });
+</script>
+</body>
+</html>

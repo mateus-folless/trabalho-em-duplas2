@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#e8edf1; --panel:#14263a; --panel-ink:#e8edf1; --card:#fff; --ink:#14263a; --muted:#5a6b7c; --line:#c7d1da; --accent:#1f6f5c; --accent-hover:#185a4a; --error:#b3261e; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin:0; font-family:"Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); display:grid; grid-template-columns:minmax(280px,5fr) 7fr; }
+  aside { background:var(--panel); color:var(--panel-ink); padding:3rem clamp(1.5rem,4vw,3.5rem); display:flex; flex-direction:column; justify-content:flex-end; }
+  aside h1 { font-size:clamp(2rem,4vw,3.4rem); line-height:1.05; margin:0 0 1rem; font-weight:700; letter-spacing:-0.02em; }
+  aside p { margin:0; max-width:32ch; line-height:1.5; color:#aebccb; }
+  main { display:grid; place-items:center; padding:2rem 1.25rem; }
+  form { width:100%; max-width:420px; }
+  .field { margin-bottom:1.1rem; }
+  label { display:block; font-weight:500; margin-bottom:.35rem; }
+  input { width:100%; font:inherit; padding:.75rem .85rem; background:var(--card); border:1.5px solid var(--line); border-radius:6px; color:var(--ink); }
+  input:focus-visible { outline:3px solid rgba(31,111,92,.3); border-color:var(--accent); }
+  .field.invalid input { border-color:var(--error); }
+  .msg { min-height:1.2rem; margin-top:.3rem; font-size:.875rem; color:var(--error); }
+  button.submit { width:100%; font:inherit; font-weight:700; padding:.85rem 1rem; margin-top:.4rem; background:var(--accent); color:#fff; border:0; border-radius:6px; cursor:pointer; }
+  button.submit:hover { background:var(--accent-hover); }
+  button.submit:focus-visible { outline:3px solid rgba(31,111,92,.4); outline-offset:2px; }
+  button.submit:disabled { opacity:.6; cursor:progress; }
+  #status { margin-top:1rem; padding:.8rem 1rem; border-radius:6px; display:none; line-height:1.4; }
+  #status.ok { display:block; background:#dcefe9; color:#124a3c; }
+  #status.err { display:block; background:#f7e0de; color:#7d1a14; }
+  .alt { margin-top:1.25rem; color:var(--muted); }
+  .alt a { color:var(--accent); font-weight:500; }
+  @media (max-width:760px) { body { grid-template-columns:1fr; grid-template-rows:auto 1fr; } aside { padding:1.75rem 1.5rem; justify-content:flex-start; } aside h1 { font-size:2rem; } }
+</style>
+</head>
+<body>
+  <aside>
+    <h1>Entrar</h1>
+    <p>Use o e-mail e a senha que você cadastrou.</p>
+  </aside>
+  <main>
+    <form id="form" novalidate>
+      <div id="status" role="status"></div>
+      <div class="field" data-field="email" style="margin-top:1rem">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="email" required>
+        <div class="msg" aria-live="polite"></div>
+      </div>
+      <div class="field" data-field="senha">
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" autocomplete="current-password" required>
+        <div class="msg" aria-live="polite"></div>
+      </div>
+      <button class="submit" type="submit" id="btn">Entrar</button>
+      <p class="alt">Ainda não tem conta? <a href="index.html">Criar conta</a></p>
+    </form>
+  </main>
+
+<script>
+  // Ajuste a rota e o formato do corpo conforme a sua API.
+  const LOGIN_API = 'http://localhost:3000/api/login';
+  const $ = (id) => document.getElementById(id);
+
+  // Mensagem vinda do cadastro
+  if (new URLSearchParams(location.search).get('cadastro') === 'ok') {
+    $('status').className = 'ok';
+    $('status').textContent = 'Conta criada com sucesso. Entre com seu e-mail e senha.';
+  }
+
+  function marcar(campo, erro) {
+    const box = document.querySelector(`[data-field="${campo}"]`);
+    box.classList.toggle('invalid', !!erro);
+    box.querySelector('.msg').textContent = erro;
+  }
+
+  $('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('status').className = '';
+    const email = $('email').value.trim().toLowerCase();
+    const senha = $('senha').value;
+    const eEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? '' : 'Digite um e-mail válido.';
+    const eSenha = senha ? '' : 'Digite sua senha.';
+    marcar('email', eEmail); marcar('senha', eSenha);
+    if (eEmail || eSenha) { (eEmail ? $('email') : $('senha')).focus(); return; }
+
+    const btn = $('btn');
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    try {
+      const res = await fetch(LOGIN_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha })
+      });
+      let data = null;
+      try { data = await res.json(); } catch (_) {}
+      if (res.ok) {
+        if (data && data.token) sessionStorage.setItem('token', data.token);
+        $('status').className = 'ok';
+        $('status').textContent = 'Login feito com sucesso.';
+        // window.location.href = 'home.html'; // destino após o login
+      } else {
+        const msg = data && (data.erro || data.error || data.mensagem || data.message);
+        $('status').className = 'err';
+        $('status').textContent = msg || (res.status === 401 ? 'E-mail ou senha incorretos.' : res.status >= 500 ? 'O servidor falhou. Tente de novo em instantes.' : `Erro ${res.status}. Tente de novo.`);
+      }
+    } catch (err) {
+      $('status').className = 'err';
+      $('status').textContent = 'Não foi possível falar com o servidor. Confira se a API está rodando.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  });
+</script>
+</body>
+</html>
